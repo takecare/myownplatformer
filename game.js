@@ -23,48 +23,30 @@ const canvas = (id = 'canvas') => {
   if (_canvas.getContext) {
     const context = _canvas.getContext('2d')
     context.clearRect(0, 0, _canvas.width, _canvas.height)
-    context.strokeRect(0, 0, _canvas.width - 3, _canvas.height - 3);
+    context.strokeRect(3, 3, _canvas.width - 3, _canvas.height - 3);
     return context
   }
   throw `can't find canvas with id '${id}'`
 }
 
-var lastTimestamp = null
+var __lastTimestamp = performance.now()
+console.log(__lastTimestamp) // ...
+var f = true
 const requestCallback = callback => currentTimestamp => {
-  if (!lastTimestamp) {
-    lastTimestamp = currentTimestamp
+  const dt = currentTimestamp - __lastTimestamp
+  if (f) {
+    f=false
+    console.log(currentTimestamp, dt) // ...
   }
-  const dt = currentTimestamp - lastTimestamp
-  lastTimestamp = currentTimestamp
+  __lastTimestamp = currentTimestamp
   callback(dt)
   requestAnimationFrame(requestCallback(callback))
 }
 const loop = callback => window.requestAnimationFrame(requestCallback(callback))
 
-loop(dt => console.log(dt))
-
-
-const duration = 3000 // ms
-var lastTimestamp = null
-var total = 0
-var x = 0
-
-const animate = timestamp => {
-  if (!lastTimestamp) {
-    lastTimestamp = timestamp
-  }
-  const dt = timestamp - lastTimestamp
-
-  if (total < duration) {
-    x += 24
-    canvas().fillRect(x, 0, 25, 25)
-    console.log(`moved ${x}, total=${total}`)
-  }
-
-  total += dt
-  lastTimestamp = timestamp
-  window.requestAnimationFrame(animate)
-}
-
 // setTimeout(() => console.log('>>> TIMEOUT <<<'), duration)
-// window.requestAnimationFrame(animate)
+
+const draw = dt => {
+  canvas().fillRect(0, 0, 25, 25)
+}
+loop(draw)
