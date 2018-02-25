@@ -22,31 +22,40 @@ const canvas = (id = 'canvas') => {
   const _canvas = document.getElementById(id)
   if (_canvas.getContext) {
     const context = _canvas.getContext('2d')
-    context.clearRect(0, 0, _canvas.width, _canvas.height)
+    // context.clearRect(0, 0, _canvas.width, _canvas.height)
     context.strokeRect(3, 3, _canvas.width - 3, _canvas.height - 3);
     return context
   }
   throw `can't find canvas with id '${id}'`
 }
 
-var __lastTimestamp = performance.now()
-console.log(__lastTimestamp) // ...
-var f = true
-const requestCallback = callback => currentTimestamp => {
-  const dt = currentTimestamp - __lastTimestamp
-  if (f) {
-    f=false
-    console.log(currentTimestamp, dt) // ...
+const loop = (callback, frameRateLimit) => {
+  let lastTimestamp = performance.now()
+  const innerLoop = (callback, frameRateLimit) => currentTimestamp => {
+    window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
+
+    if (currentTimestamp < lastTimestamp + (1000 / frameRateLimit)) {
+      return
+    }
+
+    const dt = currentTimestamp - lastTimestamp
+    lastTimestamp = currentTimestamp
+    callback(dt)
   }
-  __lastTimestamp = currentTimestamp
-  callback(dt)
-  requestAnimationFrame(requestCallback(callback))
+  window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
 }
-const loop = callback => window.requestAnimationFrame(requestCallback(callback))
+
+const gameLoop = (callback, frameRateLimit = 60) => loop(callback, frameRateLimit)
+const gameLoopAt30 = callback => gameLoop(callback, 30)
 
 // setTimeout(() => console.log('>>> TIMEOUT <<<'), duration)
 
+let x = 0
 const draw = dt => {
-  canvas().fillRect(0, 0, 25, 25)
+  canvas().fillRect(x++, 0, 25, 25)
 }
-loop(draw)
+gameLoop(draw)
+
+let x30fps = 0
+const drawAt30fps = () => canvas().fillRect(x30fps++, 30, 25, 25)
+gameLoopAt30(drawAt30fps)
