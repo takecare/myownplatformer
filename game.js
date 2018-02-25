@@ -52,10 +52,10 @@ const gameLoopAt30 = callback => gameLoop(callback, 30)
 
 let x = 0
 const draw = dt => {
-  canvas().fillRect(x++, 0, 25, 25)
+  canvas().fillRect(x++ * dt, 0, 25, 25)
 }
 gameLoop(draw)
 
 let x30fps = 0
-const drawAt30fps = () => canvas().fillRect(x30fps++, 30, 25, 25)
+const drawAt30fps = dt => canvas().fillRect(x30fps++ * dt, 30, 25, 25)
 gameLoopAt30(drawAt30fps)
