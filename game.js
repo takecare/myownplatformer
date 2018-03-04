@@ -1,14 +1,3 @@
-var last = null
-const onFrame = timestamp => {
-  if (!last) {
-    last = timestamp
-  }
-  console.log(`amount of time since last update: ${timestamp - last} ms`)
-  last = timestamp
-  window.requestAnimationFrame(onFrame)
-}
-//window.requestAnimationFrame(onFrame)
-
 // requestAnimationFrame() should be used when you want to update anything before the browser
 // runs the next painting cycle. you pass it a callback to do whatever you want just before
 // that moment. browsers will try to run callbacks passed to this method at 60 fps.
@@ -42,20 +31,20 @@ const loop = (callback, frameRateLimit) => {
     lastTimestamp = currentTimestamp
     callback(dt)
   }
-  window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
+  return window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
 }
 
-const gameLoop = (callback, frameRateLimit = 60) => loop(callback, frameRateLimit)
-const gameLoopAt30 = callback => gameLoop(callback, 30)
-
-// setTimeout(() => console.log('>>> TIMEOUT <<<'), duration)
+function gameLoop(callback, frameRateLimit = 60) {
+  this.id = null
+  this.start = () => this.id = loop(callback, frameRateLimit)
+  this.stop = () => window.cancelAnimationFrame(id)
+  return this
+}
 
 let x = 0
-const draw = dt => {
-  canvas().fillRect(x++ * dt, 0, 25, 25)
-}
-gameLoop(draw)
+const draw = dt => canvas().fillRect(x++ * dt, 0, 25, 25)
 
-let x30fps = 0
-const drawAt30fps = dt => canvas().fillRect(x30fps++ * dt, 30, 25, 25)
-gameLoopAt30(drawAt30fps)
+const drawing = gameLoop(draw)
+drawing.start()
+
+setTimeout(() => drawing.stop(), 1500)
