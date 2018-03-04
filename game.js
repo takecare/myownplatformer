@@ -18,37 +18,51 @@ const canvas = (id = 'canvas') => {
   throw `can't find canvas with id '${id}'`
 }
 
-const loop = (callback, frameRateLimit) => {
-  let lastTimestamp = performance.now()
+class Loop {
 
-  const innerLoop = (callback, frameRateLimit) => currentTimestamp => {
-    let id = window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
-
-    if (currentTimestamp < lastTimestamp + (1000 / frameRateLimit)) {
-      return id
-    }
-
-    const dt = currentTimestamp - lastTimestamp
-    lastTimestamp = currentTimestamp
-    callback(dt)
-
-    return id
+  constructor(painter, frameRateLimit = 60) {
+    this._painter = painter
+    this._frameRateLimit = frameRateLimit
+    this._lastTimestamp = null
+    this._id = null
+    this._loop = null
   }
 
-  return innerLoop(callback,frameRateLimit)(lastTimestamp)
-}
+  _createInnerLoop() {
+    this._lastTimestamp = performance.now()
+    return (currentTimestamp = this._lastTimestamp) => {
+      this._id = window.requestAnimationFrame(this._loop)
 
-function gameLoop(callback, frameRateLimit = 60) {
-  this.id = null
-  this.start = () => this.id = loop(callback, frameRateLimit)
-  this.stop = () => window.cancelAnimationFrame(id)
-  return this
+      if (currentTimestamp < this._lastTimestamp + (1000 / this._frameRateLimit)) {
+        return this._id
+      }
+
+      const dt = currentTimestamp - this._lastTimestamp
+      this._lastTimestamp = currentTimestamp
+      this._painter(dt)
+
+      return this._id
+    }
+  }
+
+  start() {
+    this._loop = this._createInnerLoop()
+    this._loop()
+  }
+
+  pause() {
+    window.cancelAnimationFrame(this._id)
+  }
+
+  continue() {
+    this._loop()
+  }
 }
 
 let x = 0
 const draw = dt => canvas().fillRect(x++ * dt, 0, 25, 25)
 
-const drawing = gameLoop(draw)
-drawing.start()
-
-setTimeout(() => drawing.stop(), 1500)
+const k = new Loop(draw)
+k.start()
+setTimeout(() => k.pause(), 250)
+setTimeout(() => k.continue(), 550)
