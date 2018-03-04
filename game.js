@@ -20,18 +20,22 @@ const canvas = (id = 'canvas') => {
 
 const loop = (callback, frameRateLimit) => {
   let lastTimestamp = performance.now()
+
   const innerLoop = (callback, frameRateLimit) => currentTimestamp => {
-    window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
+    let id = window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
 
     if (currentTimestamp < lastTimestamp + (1000 / frameRateLimit)) {
-      return
+      return id
     }
 
     const dt = currentTimestamp - lastTimestamp
     lastTimestamp = currentTimestamp
     callback(dt)
+
+    return id
   }
-  return window.requestAnimationFrame(innerLoop(callback, frameRateLimit))
+
+  return innerLoop(callback,frameRateLimit)(lastTimestamp)
 }
 
 function gameLoop(callback, frameRateLimit = 60) {
