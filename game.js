@@ -11,7 +11,6 @@ const canvas = (id = 'canvas') => {
   const _canvas = document.getElementById(id)
   if (_canvas.getContext) {
     const context = _canvas.getContext('2d')
-    // context.clearRect(0, 0, _canvas.width, _canvas.height)
     context.strokeRect(3, 3, _canvas.width - 3, _canvas.height - 3);
     return context
   }
@@ -52,6 +51,7 @@ class Loop {
 
   _updateFpsCount(currentTimestamp) {
     this._frameCounter += 1
+
     if (!this._lastFpsCountTimestamp) {
       this._lastFpsCountTimestamp = currentTimestamp
     }
@@ -77,7 +77,7 @@ class Loop {
   }
 
   fps() {
-    return this._fps
+    return this._fps ? this._fps : this._frameCounter
   }
 }
 
@@ -89,9 +89,6 @@ game.start()
 setTimeout(() => game.pause(), 250)
 setTimeout(() => game.continue(), 550)
 
-const printFps = () => console.log(game.fps())
-const printRegularly = () => setTimeout(() => {
-  printFps();
-  printRegularly()
-}, 20)
+const printFps = () => console.log(`fps: ${game.fps()}`)
+const printRegularly = () => setTimeout(() => { printFps(); printRegularly()}, 1000)
 printRegularly()
