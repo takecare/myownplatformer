@@ -26,6 +26,9 @@ class Loop {
     this._lastTimestamp = null
     this._id = null
     this._loop = null
+
+    this._frameCounter = 0
+    this._lastFpsCountTimestamp = null
   }
 
   _createInnerLoop() {
@@ -41,7 +44,22 @@ class Loop {
       this._lastTimestamp = currentTimestamp
       this._painter(dt)
 
+      this._updateFpsCount(currentTimestamp)
+
       return this._id
+    }
+  }
+
+  _updateFpsCount(currentTimestamp) {
+    this._frameCounter += 1
+    if (!this._lastFpsCountTimestamp) {
+      this._lastFpsCountTimestamp = currentTimestamp
+    }
+
+    if (currentTimestamp - this._lastFpsCountTimestamp >= 1000) {
+      this._fps = this._frameCounter
+      this._frameCounter = 0
+      this._lastFpsCountTimestamp = currentTimestamp
     }
   }
 
@@ -54,15 +72,26 @@ class Loop {
     window.cancelAnimationFrame(this._id)
   }
 
-  continue() {
+  continue () {
     this._loop()
+  }
+
+  fps() {
+    return this._fps
   }
 }
 
 let x = 0
 const draw = dt => canvas().fillRect(x++ * dt, 0, 25, 25)
 
-const k = new Loop(draw)
-k.start()
-setTimeout(() => k.pause(), 250)
-setTimeout(() => k.continue(), 550)
+const game = new Loop(draw)
+game.start()
+setTimeout(() => game.pause(), 250)
+setTimeout(() => game.continue(), 550)
+
+const printFps = () => console.log(game.fps())
+const printRegularly = () => setTimeout(() => {
+  printFps();
+  printRegularly()
+}, 20)
+printRegularly()
