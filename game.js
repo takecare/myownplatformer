@@ -15,7 +15,11 @@ const canvas = (id = 'canvas') => {
   throw `can't find canvas with id '${id}'`
 }
 
-class Renderer {
+class Painter {
+
+  static create() {
+    return new Painter(canvas())
+  }
 
   constructor(canvas) {
     this._canvas = canvas
@@ -27,38 +31,10 @@ class Renderer {
   }
 }
 
-class World {
-
-  constructor(renderer, width, height, elementSize, map, mapping) {
-    this._renderer = renderer
-    this._width = width
-    this._height = height
-    this._elementSize = elementSize
-    this._map = map
-    this._mapping = mapping
-  }
-
-  _drawElement(color, x, y) {
-    this._renderer.drawSquare(x, y, this._elementSize, color)
-  }
-
-  draw() { // TODO ignoring dt for now...
-    for (let x = 0; x < this._width; x++) {
-      for (let y = 0; y < this._height; y++) {
-        this._drawElement(
-          this._mapping[this._map[y * this._width + x]],
-          this._elementSize * x,
-          this._elementSize * y
-        )
-      }
-    }
-  }
-}
-
 class Loop {
 
-  constructor(world, frameRateLimit = 60) {
-    this._renderWorld = () => world.draw()
+  constructor(renderable, frameRateLimit = 60) {
+    this._update = (dt) => renderable.render(dt)
     this._frameRateLimit = frameRateLimit
     this._lastTimestamp = null
     this._id = null
@@ -83,7 +59,7 @@ class Loop {
 
       const dt = currentTimestamp - this._lastTimestamp
       this._lastTimestamp = currentTimestamp
-      this._renderWorld(dt)
+      this._update(dt)
 
       this._updateFpsCount(currentTimestamp)
 
@@ -124,6 +100,115 @@ class Loop {
   }
 }
 
+class SceneRenderer {
+
+  constructor(scene) {
+    this._scene = scene
+  }
+
+  render(dt) {
+    this._scene.render(dt)
+  }
+
+  set(scene) {
+    this._scene = scene
+  }
+}
+
+class Game {
+
+  static create(scenes) {
+    const firstSceneIndex = 0
+    const sceneRenderer = new SceneRenderer(scenes[firstSceneIndex])
+    const loop = new Loop(sceneRenderer)
+    return new Game(loop, sceneRenderer, firstSceneIndex, scenes)
+  }
+
+  constructor(loop, sceneRenderer, firstSceneIndex, scenes) {
+    this._loop = loop
+    this._sceneRenderer = sceneRenderer
+    this._currentSceneIndex = firstSceneIndex
+    this._scenes = scenes
+  }
+
+  start() {
+    this._loop.start()
+  }
+
+  stop() {
+    this._loop.pause()
+  }
+
+  next() {
+    if (this._currentSceneIndex < this._scenes.length) {
+      this._currentSceneIndex += 1
+    } else {
+      this._currentSceneIndex = 0
+    }
+  }
+
+  fps() {
+    return this._loop.fps()
+  }
+}
+
+class Scene {
+
+  constructor(player, world) {
+    this._player = player
+    this._world = world
+  }
+
+  render(dt) {
+    this._world.draw()
+    this._player.draw()
+  }
+}
+
+class Player {
+
+  constructor(painter, size = 10, color = '#cc1111') {
+    this._painter = painter
+    this._size = size
+    this._color = color
+    this._x = 0
+    this._y = 0
+  }
+
+  draw() {
+    this._painter.drawSquare(this._x, this._y, this._size, this._color)
+  }
+}
+
+class World {
+
+  constructor(painter, width, height, elementSize, map, mapping) {
+    this._painter = painter
+    this._width = width
+    this._height = height
+    this._elementSize = elementSize
+    this._map = map
+    this._mapping = mapping
+  }
+
+  _drawElement(color, x, y) {
+    this._painter.drawSquare(x, y, this._elementSize, color)
+  }
+
+  draw() { // TODO ignoring dt for now...
+    for (let x = 0; x < this._width; x++) {
+      for (let y = 0; y < this._height; y++) {
+        this._drawElement(
+          this._mapping[this._map[y * this._width + x]],
+          this._elementSize * x,
+          this._elementSize * y
+        )
+      }
+    }
+  }
+}
+
+// -
 
 const map = [
   0,0,0,0,0,0,0,0,0,0,
@@ -143,9 +228,13 @@ const mapping = {
   1: '#5d995d'
 }
 
-const renderer = new Renderer(canvas())
-const world = new World(renderer, 10, 10, 40, map, mapping)
-const game = new Loop(world)
+const painter = Painter.create()
+
+const world = new World(painter, 10, 10, 40, map, mapping)
+const player = new Player(painter)
+const scene = new Scene(player, world)
+
+const game = Game.create([scene])
 game.start()
 
 const printFps = () => console.log(`fps: ${game.fps()}`)
