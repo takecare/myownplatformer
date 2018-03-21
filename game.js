@@ -10,17 +10,55 @@
 const canvas = (id = 'canvas') => {
   const _canvas = document.getElementById(id)
   if (_canvas.getContext) {
-    const context = _canvas.getContext('2d')
-    context.strokeRect(3, 3, _canvas.width - 3, _canvas.height - 3);
-    return context
+    return context = _canvas.getContext('2d')
   }
   throw `can't find canvas with id '${id}'`
 }
 
+class Renderer {
+
+  constructor(canvas) {
+    this._canvas = canvas
+  }
+
+  drawSquare(x, y, size, color) {
+    this._canvas.fillStyle = color
+    this._canvas.fillRect(x, y, size, size)
+  }
+}
+
+class World {
+
+  constructor(renderer, width, height, elementSize, map, mapping) {
+    this._renderer = renderer
+    this._width = width
+    this._height = height
+    this._elementSize = elementSize
+    this._map = map
+    this._mapping = mapping
+  }
+
+  _drawElement(color, x, y) {
+    this._renderer.drawSquare(x, y, this._elementSize, color)
+  }
+
+  draw() { // TODO ignoring dt for now...
+    for (let x = 0; x < this._width; x++) {
+      for (let y = 0; y < this._height; y++) {
+        this._drawElement(
+          this._mapping[this._map[y * this._width + x]],
+          this._elementSize * x,
+          this._elementSize * y
+        )
+      }
+    }
+  }
+}
+
 class Loop {
 
-  constructor(painter, frameRateLimit = 60) {
-    this._painter = painter
+  constructor(world, frameRateLimit = 60) {
+    this._renderWorld = () => world.draw()
     this._frameRateLimit = frameRateLimit
     this._lastTimestamp = null
     this._id = null
@@ -45,7 +83,7 @@ class Loop {
 
       const dt = currentTimestamp - this._lastTimestamp
       this._lastTimestamp = currentTimestamp
-      this._painter(dt)
+      this._renderWorld(dt)
 
       this._updateFpsCount(currentTimestamp)
 
@@ -77,7 +115,7 @@ class Loop {
     window.cancelAnimationFrame(this._id)
   }
 
-  continue () {
+  continue() {
     this._loop()
   }
 
@@ -86,13 +124,29 @@ class Loop {
   }
 }
 
-let x = 0
-const draw = dt => canvas().fillRect(x++ * dt, 0, 25, 25)
 
-const game = new Loop(draw)
+const map = [
+  0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,
+  0,0,0,0,0,0,0,0,0,0,
+  0,0,0,1,1,1,0,0,0,0,
+  0,0,0,0,0,0,0,0,1,1,
+  1,0,0,0,0,0,0,0,0,0,
+  1,0,0,0,0,0,0,0,0,0,
+  1,1,1,1,1,0,1,1,1,1,
+  1,1,1,1,1,0,1,1,1,1,
+]
+
+const mapping = {
+  0: 'lightblue',
+  1: '#5d995d'
+}
+
+const renderer = new Renderer(canvas())
+const world = new World(renderer, 10, 10, 40, map, mapping)
+const game = new Loop(world)
 game.start()
-setTimeout(() => game.pause(), 250)
-setTimeout(() => game.continue(), 550)
 
 const printFps = () => console.log(`fps: ${game.fps()}`)
 const printRegularly = () => setTimeout(() => { printFps(); printRegularly()}, 1000)
