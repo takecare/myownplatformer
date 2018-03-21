@@ -30,11 +30,15 @@ class Loop {
     this._lastFpsCountTimestamp = null
   }
 
+  // the inner loop allows us to encapsulate details like the requestAnimationFrame callback id
   _createInnerLoop() {
+    // capture the first timestamp. this assumes you'll immediately call the returned function right away
     this._lastTimestamp = performance.now()
+
     return (currentTimestamp = this._lastTimestamp) => {
       this._id = window.requestAnimationFrame(this._loop)
 
+      // skip this frame due to an issue with chrome: https://bugs.chromium.org/p/chromium/issues/detail?id=268213
       if (currentTimestamp < this._lastTimestamp + (1000 / this._frameRateLimit)) {
         return this._id
       }
@@ -56,6 +60,7 @@ class Loop {
       this._lastFpsCountTimestamp = currentTimestamp
     }
 
+    // if 1sec or more has passed, it's time to reset the counter
     if (currentTimestamp - this._lastFpsCountTimestamp >= 1000) {
       this._fps = this._frameCounter
       this._frameCounter = 0
